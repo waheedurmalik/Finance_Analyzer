@@ -10,35 +10,58 @@
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="icon-192.svg"/>
 <title>Ledger</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0d0f0e; }
-  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:#0d0f0e;color:#e8ede8;font-family:system-ui,sans-serif;}
+  #splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0d0f0e;z-index:9999;}
+  #splash .logo{font-family:Georgia,serif;font-size:36px;color:#b8f576;letter-spacing:-1px;}
+  #splash .dot{color:#2a3a2a;font-style:italic;}
+  #splash .sub{font-size:13px;color:#4a5a4a;}
+  #err{display:none;max-width:420px;padding:20px;background:#1a0a0a;border:1px solid #5a1a1a;border-radius:12px;font-size:13px;color:#f57676;line-height:1.6;text-align:center;}
+  input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.7);cursor:pointer;}
 </style>
 </head>
 <body>
+<div id="splash">
+  <div class="logo">Ledger<span class="dot">.</span></div>
+  <div class="sub" id="splash-msg">Loading…</div>
+  <div id="err"></div>
+</div>
 <div id="root"></div>
-<script>
-if('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
-}
-</script>
-<script type="text/babel" data-presets="react">
 
+<script>
+function splashErr(msg) {
+  document.getElementById('splash-msg').style.display='none';
+  var e=document.getElementById('err');
+  e.style.display='block';
+  e.textContent='Failed to load: '+msg+'. Please check your internet connection and refresh.';
+}
+window.onerror = function(msg,src,line) { splashErr(msg+' (line '+line+')'); };
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin onerror="splashErr('React')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin onerror="splashErr('ReactDOM')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.umd.min.js" crossorigin onerror="splashErr('Recharts')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin onerror="splashErr('XLSX')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js" crossorigin onerror="splashErr('Babel')"></script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+// Watch for React mounting to hide splash
+new MutationObserver(function(m,obs){
+  if(document.getElementById('root').firstChild){
+    document.getElementById('splash').style.display='none';
+    obs.disconnect();
+  }
+}).observe(document.getElementById('root'),{childList:true});
+</script>
+
+<script type="text/babel" data-presets="react,env">
 const { useState, useMemo, useEffect, useRef, useCallback } = React;
 const { BarChart, Bar, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } = Recharts;
 const XLSX = window.XLSX;
-
-
-
-
 
 // ─── OneDrive / MSAL ──────────────────────────────────────────────────────────
 const OD_FILE   = "ledger-data.json";
@@ -119,223 +142,7 @@ const DEFAULT_TAXONOMY = {
 
 const PAL = ["#76f5d4","#7695f5","#f5d476","#b8f576","#95f576","#d476f5","#f57695","#f576b8","#76d4f5","#f5f576","#f59576","#76f5b8","#f576d4","#8a9a8a"];
 
-const RAW_SEED = [
-  // ── Jan 01–02 (existing) ──────────────────────────────────────────────────
-  {date:"2026-01-01",description:"YASS Supermarket",amount:30.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-01",description:"NOON Minutes",amount:43.05,category:"Shopping",isStandard:true},
-  {date:"2026-01-01",description:"Amazon Now",amount:57.18,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-02",description:"The Kana Cafe",amount:323.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-02",description:"YASS Supermarket",amount:59.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-02",description:"NOON Minutes",amount:94.25,category:"Shopping",isStandard:true},
-  {date:"2026-01-02",description:"Motor City LLC",amount:10.00,category:"Transport",isStandard:true},
-  {date:"2026-01-02",description:"Amazon Now",amount:28.64,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-02",description:"Amazon Now",amount:41.43,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-02",description:"Amazon Now",amount:44.62,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-02",description:"Amazon Now",amount:45.63,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-02",description:"Shiny Surface Cleaning",amount:2373.00,category:"Housing",isStandard:true},
-  // ── Jan 03–05 (existing) ──────────────────────────────────────────────────
-  {date:"2026-01-03",description:"ADNOC Al Batayeh",amount:121.14,category:"Transport",isStandard:true},
-  {date:"2026-01-03",description:"e& Digital App",amount:487.97,category:"Subscriptions",isStandard:true},
-  {date:"2026-01-03",description:"Nomod",amount:425.25,category:"Other",isStandard:true},
-  {date:"2026-01-03",description:"Careem Quik",amount:75.52,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-03",description:"Puranmal Sweets",amount:151.25,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-03",description:"Puranmal Sweets",amount:15.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-03",description:"Amazon Now",amount:38.31,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-03",description:"Amazon.ae",amount:153.89,category:"Shopping",isStandard:true},
-  {date:"2026-01-03",description:"Moheeb Fresh N Chilled",amount:333.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-03",description:"Smart Dubai Government",amount:2.00,category:"Utilities",isStandard:true},
-  {date:"2026-01-04",description:"Nownow Basket",amount:76.75,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-04",description:"Lulu Hypermarket",amount:127.30,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-04",description:"NOON Minutes",amount:35.55,category:"Shopping",isStandard:true},
-  {date:"2026-01-04",description:"Amazon Now",amount:24.65,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-04",description:"Amazon Now",amount:28.71,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-04",description:"Amazon Now",amount:45.73,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-05",description:"Zero Wellness General",amount:10.00,category:"Health",isStandard:true},
-  {date:"2026-01-05",description:"Deliveroo Plus Subs",amount:29.00,category:"Subscriptions",isStandard:true},
-  {date:"2026-01-05",description:"YASS Supermarket",amount:72.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-05",description:"ENOC Link LLC",amount:276.94,category:"Transport",isStandard:true},
-  {date:"2026-01-05",description:"Amazon Grocery",amount:10.26,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-05",description:"Amazon Grocery",amount:282.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-05",description:"Amazon.ae",amount:560.00,category:"Shopping",isStandard:true},
-  {date:"2026-01-05",description:"Amazon.ae",amount:4000.00,category:"Shopping",isStandard:true},
-  {date:"2026-01-05",description:"ENOC Site No-1401",amount:25.75,category:"Transport",isStandard:true},
-  // ── Jan 07–08 (existing + new) ────────────────────────────────────────────
-  {date:"2026-01-07",description:"Careem Ride",amount:179.25,category:"Transport",isStandard:true},
-  {date:"2026-01-07",description:"Careem Ride",amount:12.07,category:"Transport",isStandard:true},
-  {date:"2026-01-07",description:"Careem Plus",amount:19.00,category:"Subscriptions",isStandard:true},
-  {date:"2026-01-07",description:"Amazon Now",amount:28.81,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-07",description:"Underground Cafe LLC",amount:157.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-07",description:"Soluxe International",amount:10.00,category:"Shopping",isStandard:true},
-  {date:"2026-01-07",description:"Ictur Yiyecek Istanbul",amount:78.98,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-08",description:"Photo Magic Int LLC",amount:70.00,category:"Shopping",isStandard:true},
-  {date:"2026-01-08",description:"Majid Alfuttaim HM Ibn",amount:986.60,category:"Shopping",isStandard:true},
-  {date:"2026-01-08",description:"DHL WSI Shipment",amount:422.00,category:"Shopping",isStandard:true},
-  {date:"2026-01-08",description:"Olusum Restaurant Istanbul",amount:604.38,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-08",description:"Olusum Restaurant Istanbul",amount:521.42,category:"Food & Dining",isStandard:true},
-  // ── Jan 08–10 ─────────────────────────────────────────────────────────────
-  {date:"2026-01-08",description:"YASS Supermarket",amount:115.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-08",description:"NOON Minutes",amount:131.05,category:"Shopping",isStandard:true},
-  {date:"2026-01-08",description:"NOON Minutes",amount:27.40,category:"Shopping",isStandard:true},
-  {date:"2026-01-08",description:"Hi Phone Telecom",amount:60.00,category:"Utilities",isStandard:true},
-  {date:"2026-01-08",description:"Amazon Now",amount:50.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-08",description:"Amazon Grocery",amount:119.98,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-08",description:"Smart Dubai Government",amount:5.00,category:"Utilities",isStandard:true},
-  {date:"2026-01-08",description:"Amazon Grocery",amount:266.21,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-08",description:"Takaful Emarat Insurance",amount:6580.35,category:"Other",isStandard:true},
-  {date:"2026-01-09",description:"Inflight Internet Serv",amount:64.48,category:"Travel",isStandard:true},
-  {date:"2026-01-09",description:"Le Meridien Istanbul",amount:1240.22,category:"Travel",isStandard:true},
-  {date:"2026-01-10",description:"Park N Shop Cash N Car",amount:40.95,category:"Transport",isStandard:true},
-  {date:"2026-01-09",description:"YASS Supermarket",amount:79.95,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-09",description:"NOON Minutes",amount:56.35,category:"Shopping",isStandard:true},
-  {date:"2026-01-09",description:"NOON Minutes",amount:33.90,category:"Shopping",isStandard:true},
-  {date:"2026-01-09",description:"DTC VIP Limousine",amount:195.00,category:"Transport",isStandard:true},
-  {date:"2026-01-10",description:"Emarat 7030 Al Emarat",amount:261.15,category:"Transport",isStandard:true},
-  {date:"2026-01-10",description:"Justlife",amount:118.00,category:"Housing",isStandard:true},
-  {date:"2026-01-10",description:"Monsoon Children Dubai",amount:153.25,category:"Shopping",isStandard:true},
-  {date:"2026-01-10",description:"T Choithram & Sons",amount:157.40,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-10",description:"Amazon Grocery",amount:6.93,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-10",description:"Amazon Grocery",amount:22.04,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-10",description:"Amazon Grocery",amount:23.40,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-10",description:"Amazon Now",amount:43.38,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-10",description:"Amazon.ae",amount:383.99,category:"Shopping",isStandard:true},
-  {date:"2026-01-10",description:"LRIL",amount:387.75,category:"Other",isStandard:true},
-  // ── Jan 11–14 ─────────────────────────────────────────────────────────────
-  {date:"2026-01-11",description:"YASS Supermarket",amount:27.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-11",description:"Amazon.ae",amount:58.40,category:"Shopping",isStandard:true},
-  {date:"2026-01-12",description:"Deliveroo",amount:113.95,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-12",description:"Amazon.ae",amount:252.93,category:"Shopping",isStandard:true},
-  {date:"2026-01-12",description:"Bebabel Pal Qlub",amount:2343.03,category:"Entertainment",isStandard:true},
-  {date:"2026-01-12",description:"Parkonic Parking",amount:10.00,category:"Transport",isStandard:true},
-  {date:"2026-01-13",description:"Nownow Basket",amount:57.33,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-13",description:"YASS Supermarket",amount:72.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-13",description:"NOON Minutes",amount:30.05,category:"Shopping",isStandard:true},
-  {date:"2026-01-14",description:"ADNOC Al Zubair 331",amount:280.02,category:"Transport",isStandard:true},
-  {date:"2026-01-14",description:"ADNOC Bawabah RAK 897",amount:38.00,category:"Transport",isStandard:true},
-  {date:"2026-01-14",description:"ADNOC Al Zubair 331",amount:19.75,category:"Transport",isStandard:true},
-  {date:"2026-01-15",description:"Park N Shop Cash N Car",amount:106.60,category:"Transport",isStandard:true},
-  {date:"2026-01-14",description:"NOON Minutes",amount:32.90,category:"Shopping",isStandard:true},
-  {date:"2026-01-14",description:"Amazon Grocery",amount:16.11,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-14",description:"Amazon Grocery",amount:20.29,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-14",description:"Big Fresh Vegetables",amount:44.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-14",description:"Amazon Grocery",amount:40.62,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-14",description:"Amazon Now",amount:45.91,category:"Food & Dining",isStandard:true},
-  // ── Jan 15–17 ─────────────────────────────────────────────────────────────
-  {date:"2026-01-15",description:"Deliveroo",amount:99.45,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-15",description:"NOON Minutes",amount:25.05,category:"Shopping",isStandard:true},
-  {date:"2026-01-15",description:"Amazon Now",amount:37.52,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-15",description:"Amazon Now",amount:41.05,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-15",description:"Saudi German Hospital",amount:67.00,category:"Health",isStandard:true},
-  {date:"2026-01-15",description:"Al Aqeed Contracting",amount:25.00,category:"Housing",isStandard:true},
-  {date:"2026-01-15",description:"Gifto Restaurants",amount:472.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-15",description:"Emporio Arman Qlub",amount:36.00,category:"Shopping",isStandard:true},
-  {date:"2026-01-15",description:"Smart Dubai Government",amount:4.00,category:"Utilities",isStandard:true},
-  {date:"2026-01-15",description:"Grandiose Supermarket",amount:248.71,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-17",description:"Arab Chai Express Cafe",amount:10.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-16",description:"YASS Supermarket",amount:35.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-16",description:"Kibsons International",amount:75.15,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-17",description:"Nownow Basket",amount:66.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-17",description:"Nomod",amount:472.50,category:"Other",isStandard:true},
-  {date:"2026-01-17",description:"YASS Supermarket",amount:199.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-17",description:"NOON Minutes",amount:33.45,category:"Shopping",isStandard:true},
-  {date:"2026-01-17",description:"Lulu Hypermarket",amount:294.15,category:"Food & Dining",isStandard:true},
-  // ── Jan 18–20 ─────────────────────────────────────────────────────────────
-  {date:"2026-01-18",description:"Nownow Basket",amount:90.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-19",description:"Mango Hypermarket",amount:208.19,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-19",description:"Deliveroo",amount:40.80,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-18",description:"Amazon Prime Subscript",amount:16.00,category:"Subscriptions",isStandard:true},
-  {date:"2026-01-18",description:"Zomato",amount:546.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-18",description:"Amazon Grocery",amount:39.82,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-18",description:"Amazon Now",amount:67.42,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-19",description:"All Clean Dubai",amount:735.00,category:"Housing",isStandard:true},
-  {date:"2026-01-20",description:"Arab Chai Express Cafe",amount:14.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-19",description:"Amazon.ae",amount:301.68,category:"Shopping",isStandard:true},
-  {date:"2026-01-20",description:"Emirates Fast Food Co",amount:30.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-20",description:"London Taxi TXW 81293",amount:106.58,category:"Transport",isStandard:true},
-  {date:"2026-01-20",description:"London Taxi TXW 80531",amount:162.18,category:"Transport",isStandard:true},
-  {date:"2026-01-20",description:"Uber London",amount:60.70,category:"Transport",isStandard:true},
-  {date:"2026-01-20",description:"Indian City London",amount:388.87,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-20",description:"Pret A Manger Manchester",amount:48.46,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-20",description:"ENOC Link LLC",amount:296.86,category:"Transport",isStandard:true},
-  {date:"2026-01-20",description:"Amazon Now",amount:64.01,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-20",description:"Amazon.ae",amount:125.98,category:"Shopping",isStandard:true},
-  {date:"2026-01-21",description:"Everyday App London",amount:5.08,category:"Subscriptions",isStandard:true},
-  {date:"2026-01-21",description:"Uber London",amount:163.37,category:"Transport",isStandard:true},
-  // ── Jan 21–23 ─────────────────────────────────────────────────────────────
-  {date:"2026-01-21",description:"Uber London",amount:102.18,category:"Transport",isStandard:true},
-  {date:"2026-01-21",description:"The Market Place Store London",amount:39.23,category:"Shopping",isStandard:true},
-  {date:"2026-01-21",description:"Taxi Cabvision London",amount:202.19,category:"Transport",isStandard:true},
-  {date:"2026-01-22",description:"Nawab Authentic",amount:129.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-22",description:"Desco Copy Centre",amount:7.88,category:"Shopping",isStandard:true},
-  {date:"2026-01-22",description:"YASS Supermarket",amount:98.95,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-21",description:"Zahrat Al Satwa Saloon",amount:140.00,category:"Health",isStandard:true},
-  {date:"2026-01-21",description:"Bait Al Shay Alaseel",amount:6.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-21",description:"Subway",amount:32.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-21",description:"Amazon Now",amount:38.54,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-21",description:"Amazon.ae",amount:148.09,category:"Shopping",isStandard:true},
-  {date:"2026-01-22",description:"Real Greek St Pauls London",amount:286.05,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-22",description:"Uber London",amount:96.86,category:"Transport",isStandard:true},
-  {date:"2026-01-22",description:"SumUp S D Limited Manchester",amount:121.59,category:"Shopping",isStandard:true},
-  {date:"2026-01-22",description:"Uber London",amount:77.28,category:"Transport",isStandard:true},
-  {date:"2026-01-23",description:"Juice Spa Salon",amount:300.00,category:"Health",isStandard:true},
-  {date:"2026-01-22",description:"Lulu Hypermarket",amount:301.70,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-22",description:"Medcare Medical Centre",amount:53.46,category:"Health",isStandard:true},
-  {date:"2026-01-23",description:"Amazon.ae",amount:80.61,category:"Shopping",isStandard:true},
-  {date:"2026-01-23",description:"Amazon Now",amount:81.53,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-23",description:"Amazon.ae",amount:123.97,category:"Shopping",isStandard:true},
-  {date:"2026-01-23",description:"Dar Al Fahidi Car Park",amount:20.00,category:"Transport",isStandard:true},
-  {date:"2026-01-23",description:"Spinneys Dubai",amount:121.00,category:"Food & Dining",isStandard:true},
-  // ── Jan 23–28 ─────────────────────────────────────────────────────────────
-  {date:"2026-01-23",description:"Qarya Al Shandagha Res",amount:27.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-24",description:"HMSHost Manchester Air",amount:18.66,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-24",description:"Amazon Grocery",amount:25.65,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-24",description:"Comb N Scissors",amount:145.00,category:"Health",isStandard:true},
-  {date:"2026-01-25",description:"YASS Supermarket",amount:91.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-25",description:"Amazon Grocery",amount:35.10,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-25",description:"Amazon Now",amount:56.43,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-25",description:"EPPCO Site 9",amount:267.04,category:"Transport",isStandard:true},
-  {date:"2026-01-25",description:"She Burger Qlub",amount:137.13,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-26",description:"e& Digital App",amount:528.79,category:"Subscriptions",isStandard:true},
-  {date:"2026-01-26",description:"New Qamar Alsahra",amount:28.35,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-26",description:"NOON Minutes",amount:91.55,category:"Shopping",isStandard:true},
-  {date:"2026-01-26",description:"Mai Himmaak Cafeteria",amount:17.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-26",description:"Amazon.ae",amount:104.91,category:"Shopping",isStandard:true},
-  {date:"2026-01-26",description:"Parkonic Parking",amount:40.00,category:"Transport",isStandard:true},
-  {date:"2026-01-27",description:"MCD Greencomunity 5422",amount:12.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-27",description:"Deliveroo",amount:38.85,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-27",description:"YASS Supermarket",amount:36.86,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-27",description:"Amazon Grocery",amount:9.90,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-27",description:"Amazon Now",amount:43.52,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-27",description:"Amazon Now",amount:70.17,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-27",description:"Prime Choice Building",amount:5.25,category:"Housing",isStandard:true},
-  {date:"2026-01-27",description:"ENOC Site 1086",amount:221.00,category:"Transport",isStandard:true},
-  {date:"2026-01-28",description:"ICP Smart Services",amount:51.77,category:"Utilities",isStandard:true},
-  {date:"2026-01-28",description:"MCD Greencomunity 5422",amount:56.00,category:"Food & Dining",isStandard:true},
-  // ── Jan 28–31 ─────────────────────────────────────────────────────────────
-  {date:"2026-01-28",description:"Hot Shay Cafe",amount:4.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-28",description:"Almuhajer Restaurant",amount:185.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-29",description:"Mango Hypermarket",amount:120.47,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-29",description:"Careem Quik",amount:111.70,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-29",description:"Careem Quik",amount:133.15,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-28",description:"Beach City Supermarket",amount:7.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-28",description:"YASS Supermarket",amount:115.50,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-28",description:"NOON Food",amount:36.55,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-29",description:"NOON Minutes",amount:71.90,category:"Shopping",isStandard:true},
-  {date:"2026-01-29",description:"Amazon Now",amount:56.69,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-29",description:"ENOC Site No-1075",amount:19.50,category:"Transport",isStandard:true},
-  {date:"2026-01-30",description:"MCD Greencomunity 5422",amount:17.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-30",description:"Zero Wellness General",amount:15.00,category:"Health",isStandard:true},
-  {date:"2026-01-30",description:"Amazon Now",amount:56.52,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-30",description:"Amazon.ae",amount:102.52,category:"Shopping",isStandard:true},
-  {date:"2026-01-30",description:"Spinneys Dubai",amount:57.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-31",description:"NOON Minutes",amount:38.60,category:"Shopping",isStandard:true},
-  {date:"2026-01-31",description:"Unidukan UAE",amount:354.01,category:"Shopping",isStandard:true},
-  {date:"2026-01-31",description:"Amazon Now",amount:35.30,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-31",description:"Dubai Electricity DEWA",amount:1639.77,category:"Utilities",isStandard:true},
-  {date:"2026-01-31",description:"Spinneys Al Furjan",amount:231.79,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-31",description:"Spinneys Al Furjan",amount:20.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-31",description:"Zomato",amount:680.00,category:"Food & Dining",isStandard:true},
-  {date:"2026-01-31",description:"Emirates District Cool",amount:1154.95,category:"Utilities",isStandard:true},
-];
+const RAW_SEED = [];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt  = (n, cur="AED") => cur+" "+Math.abs(Number(n||0)).toLocaleString("en-AE",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -2282,7 +2089,8 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+
 </script>
 </body>
 </html>
