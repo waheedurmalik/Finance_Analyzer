@@ -1589,6 +1589,7 @@ function App() {
   const [txCatFilter, setTxCatFilter] = useState("all");
   const [importMsg, setImportMsg] = useState(null);
   const [selMonths, setSelMonths] = useState([]);
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [txSubFilter, setTxSubFilter] = useState("all");
   const [globalTypeFilter, setGlobalTypeFilter] = useState(["standard", "nonstandard", "exceptional"]);
   const [currency, setCurrency] = useState("AED");
@@ -1818,10 +1819,42 @@ function App() {
       return (_a2 = t.date) == null ? void 0 : _a2.slice(0, 7);
     }).filter(Boolean))].sort();
     if (periodMonths.length < 2) return null;
-    return /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: C.muted, flexShrink: 0, marginRight: 2 } }, "Month:"), /* @__PURE__ */ React.createElement("button", { onClick: () => setSelMonths([]), style: { padding: "4px 11px", borderRadius: 20, border: `1px solid ${selMonths.length === 0 ? C.accent : C.border}`, background: selMonths.length === 0 ? C.accent : "transparent", color: selMonths.length === 0 ? "#fff" : C.muted, fontSize: 11, fontWeight: selMonths.length === 0 ? 700 : 500, cursor: "pointer", fontFamily: "inherit" } }, "All"), periodMonths.map((m) => {
+    const label = selMonths.length === 0 ? "\u{1F4C5} All Months" : selMonths.length === 1 ? "\u{1F4C5} " + fmtM(selMonths[0]) : "\u{1F4C5} " + selMonths.length + " Months";
+    return /* @__PURE__ */ React.createElement("div", { style: { marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}`, position: "relative" } }, /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        onClick: () => setShowMonthPicker((v) => !v),
+        style: __spreadProps(__spreadValues({}, btn(selMonths.length > 0 ? C.accent : C.s2, selMonths.length > 0 ? "#fff" : C.muted, selMonths.length > 0 ? "none" : `1px solid ${C.border}`, 12, "6px 14px")), { display: "flex", alignItems: "center", gap: 6 })
+      },
+      label,
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 10 } }, showMonthPicker ? "\u25B2" : "\u25BC")
+    ), selMonths.length > 0 && /* @__PURE__ */ React.createElement("button", { onClick: () => {
+      setSelMonths([]);
+      setShowMonthPicker(false);
+    }, style: __spreadValues({ marginLeft: 6 }, btn(C.s2, C.muted, `1px solid ${C.border}`, 11, "5px 10px")) }, "\u2715 Clear"), showMonthPicker && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { onClick: () => setShowMonthPicker(false), style: { position: "fixed", inset: 0, zIndex: 199 } }), /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: "100%", left: 0, zIndex: 200, marginTop: 4, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", minWidth: 180, maxHeight: 260, overflowY: "auto" } }, /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        onClick: () => {
+          setSelMonths([]);
+          setShowMonthPicker(false);
+        },
+        style: { padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${C.s2}`, cursor: "pointer", background: selMonths.length === 0 ? "rgba(42,157,111,0.06)" : "transparent" }
+      },
+      /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: selMonths.length === 0 ? C.accent : C.text } }, "All Months"),
+      selMonths.length === 0 && /* @__PURE__ */ React.createElement("span", { style: { color: C.accent, fontSize: 14 } }, "\u2713")
+    ), periodMonths.map((m) => {
       const on = selMonths.includes(m);
-      return /* @__PURE__ */ React.createElement("button", { key: m, onClick: () => setSelMonths((prev) => on ? prev.filter((x) => x !== m) : [...prev, m]), style: { padding: "4px 11px", borderRadius: 20, border: `1px solid ${on ? C.accent : C.border}`, background: on ? C.accent : "transparent", color: on ? "#fff" : C.muted, fontSize: 11, fontWeight: on ? 700 : 500, cursor: "pointer", fontFamily: "inherit" } }, fmtM(m));
-    })));
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          key: m,
+          onClick: () => setSelMonths((prev) => on ? prev.filter((x) => x !== m) : [...prev, m]),
+          style: { padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${C.s2}`, cursor: "pointer", background: on ? "rgba(42,157,111,0.06)" : "transparent" }
+        },
+        /* @__PURE__ */ React.createElement("span", { style: { fontSize: 13, fontWeight: on ? 600 : 400, color: on ? C.accent : C.text } }, fmtM(m)),
+        on && /* @__PURE__ */ React.createElement("span", { style: { color: C.accent, fontSize: 14 } }, "\u2713")
+      );
+    }))));
   })()), importMsg && /* @__PURE__ */ React.createElement("div", { style: {
     marginBottom: 12,
     padding: "12px 16px",
