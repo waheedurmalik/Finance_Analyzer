@@ -28,7 +28,6 @@
 <div id="splash">
   <img src="logo.png" alt="Home Ledger" style="max-width:260px;width:80%;height:auto;filter:saturate(1.4) brightness(0.9);"/>
   <div id="splash-msg" style="font-size:13px;font-weight:500;color:#7a8699;margin-top:8px;">Starting…</div>
-  <div id="splash-steps" style="font-size:11px;color:#aaa;margin-top:6px;text-align:center;line-height:1.8;font-family:monospace;"></div>
   <div id="err"></div>
 </div>
 <div id="root"></div>
@@ -37,36 +36,19 @@ function showErr(msg){
   var sp=document.getElementById('splash-msg'); if(sp) sp.style.display='none';
   var e=document.getElementById('err'); if(e){e.style.display='block';e.innerHTML='<strong>Error:</strong><br>'+msg;}
 }
-function step(msg){
-  var s=document.getElementById('splash-steps');
-  if(s) s.innerHTML+=msg+'<br>';
-}
 window.onerror=function(msg,src,line){ showErr((msg||'Unknown')+' — line '+line); return true; };
 window.onunhandledrejection=function(ev){ showErr('Promise: '+(ev.reason&&ev.reason.message||String(ev.reason)||'unknown')); };
-step('1. Page loaded');
 </script>
-<!-- React 17 — compatible with iOS 12+ -->
 <script src="https://cdn.jsdelivr.net/npm/react@17.0.2/umd/react.production.min.js" crossorigin="anonymous"></script>
-<script>step('2. React loaded: '+(typeof React));</script>
 <script src="https://cdn.jsdelivr.net/npm/react-dom@17.0.2/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
-<script>step('3. ReactDOM loaded: '+(typeof ReactDOM));</script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" crossorigin="anonymous"></script>
-<script>step('4. XLSX loaded: '+(typeof XLSX));</script>
 <script>
-if(!window.React||!window.ReactDOM){
-  showErr('Libraries failed to load. Check internet connection and try again.');
-} else {
-  // Verify React 17 API
-  if(typeof ReactDOM.render !== 'function'){
-    showErr('ReactDOM.render not available — unexpected React version.');
-  }
-}
+if(!window.React||!window.ReactDOM){showErr('Libraries failed to load. Check internet connection.');}
 </script>
 <script>
-// Service worker registration - deferred and non-blocking
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
-    try { navigator.serviceWorker.register('sw.js').catch(function(){}); } catch(e) {}
+    try{navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}
   });
 }
 new MutationObserver(function(m,obs){
@@ -79,8 +61,7 @@ new MutationObserver(function(m,obs){
 }).observe(document.getElementById('root'),{childList:true});
 </script>
 <script>
-step('5. App starting...');
-try {
+try{
 var React = window.React;
 var ReactDOM = window.ReactDOM;
 var XLSX = window.XLSX;
@@ -622,7 +603,7 @@ function ImportModal({ onImport, onClose }) {
   const [showKey, setShowKey] = useState(false);
   const [images, setImages] = useState([]);
   const [text, setText] = useState("");
-  const [importCurrency2, setImportCurrency] = useState("AED");
+  const [importCurrency, setImportCurrency] = useState("AED");
   function saveKey(k) {
     setApiKey(k);
     try {
@@ -793,10 +774,10 @@ function ImportModal({ onImport, onClose }) {
       setErr("No transactions found.");
       return;
     }
-    onImport(p, importCurrency2);
+    onImport(p, importCurrency);
   }
   const hasInput = images.length > 0 || text.trim().length > 0;
-  return /* @__PURE__ */ React.createElement("div", { onPaste: handlePaste, style: { position: "fixed", inset: 0, background: "rgba(13,15,14,0.96)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: 24, maxWidth: 540, width: "100%", maxHeight: "94vh", overflowY: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "inherit", fontSize: 20, marginBottom: 14 } }, "Add Statement Data"), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16, padding: "12px 16px", background: importCurrency2 === "AED" ? C.s2 : "rgba(42,157,111,0.08)", border: `2px solid ${importCurrency2 === "AED" ? C.border : C.accent}`, borderRadius: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 8, letterSpacing: "0.06em" } }, "ACCOUNT CURRENCY"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, ["AED", "GBP", "USD", "EUR", "SAR", "INR"].map((c) => /* @__PURE__ */ React.createElement("button", { key: c, onClick: () => setImportCurrency(c), style: { padding: "6px 16px", borderRadius: 20, border: `1px solid ${importCurrency2 === c ? C.accent : C.border}`, background: importCurrency2 === c ? C.accent : "transparent", color: importCurrency2 === c ? "#fff" : C.muted, fontSize: 13, fontWeight: importCurrency2 === c ? 700 : 500, cursor: "pointer", fontFamily: "inherit" } }, c))), importCurrency2 !== "AED" && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.accent, marginTop: 6 } }, "\u2713 Amounts will be converted to AED using live exchange rates")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontFamily: "monospace", color: C.dim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 } }, "Anthropic API Key"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("input", { type: showKey ? "text" : "password", value: apiKey, onChange: (e) => saveKey(e.target.value), placeholder: "sk-ant-api03-...", style: { ...inp(), flex: 1, fontFamily: "monospace", fontSize: 12 } }), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowKey((v) => !v), style: btn(C.s2, C.muted, `1px solid ${C.border}`, 12, "9px 12px") }, showKey ? "Hide" : "Show")), !apiKey && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 5 } }, "Get a free key at ", /* @__PURE__ */ React.createElement("span", { style: { color: C.accent } }, "platform.anthropic.com"), " \u2192 API Keys"), apiKey && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#0e9e7a", marginTop: 5 } }, "\u2713 Key saved locally on this device")), /* @__PURE__ */ React.createElement("input", { ref: photoInputRef, type: "file", accept: "image/*", multiple: true, onChange: (e) => {
+  return /* @__PURE__ */ React.createElement("div", { onPaste: handlePaste, style: { position: "fixed", inset: 0, background: "rgba(13,15,14,0.96)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 20, padding: 24, maxWidth: 540, width: "100%", maxHeight: "94vh", overflowY: "auto" } }, /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "inherit", fontSize: 20, marginBottom: 14 } }, "Add Statement Data"), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16, padding: "12px 16px", background: importCurrency === "AED" ? C.s2 : "rgba(42,157,111,0.08)", border: `2px solid ${importCurrency === "AED" ? C.border : C.accent}`, borderRadius: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 8, letterSpacing: "0.06em" } }, "ACCOUNT CURRENCY"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, ["AED", "GBP", "USD", "EUR", "SAR", "INR"].map((c) => /* @__PURE__ */ React.createElement("button", { key: c, onClick: () => setImportCurrency(c), style: { padding: "6px 16px", borderRadius: 20, border: `1px solid ${importCurrency === c ? C.accent : C.border}`, background: importCurrency === c ? C.accent : "transparent", color: importCurrency === c ? "#fff" : C.muted, fontSize: 13, fontWeight: importCurrency === c ? 700 : 500, cursor: "pointer", fontFamily: "inherit" } }, c))), importCurrency !== "AED" && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.accent, marginTop: 6 } }, "\u2713 Amounts will be converted to AED using live exchange rates")), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 16 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontFamily: "monospace", color: C.dim, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 } }, "Anthropic API Key"), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, /* @__PURE__ */ React.createElement("input", { type: showKey ? "text" : "password", value: apiKey, onChange: (e) => saveKey(e.target.value), placeholder: "sk-ant-api03-...", style: { ...inp(), flex: 1, fontFamily: "monospace", fontSize: 12 } }), /* @__PURE__ */ React.createElement("button", { onClick: () => setShowKey((v) => !v), style: btn(C.s2, C.muted, `1px solid ${C.border}`, 12, "9px 12px") }, showKey ? "Hide" : "Show")), !apiKey && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 5 } }, "Get a free key at ", /* @__PURE__ */ React.createElement("span", { style: { color: C.accent } }, "platform.anthropic.com"), " \u2192 API Keys"), apiKey && /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "#0e9e7a", marginTop: 5 } }, "\u2713 Key saved locally on this device")), /* @__PURE__ */ React.createElement("input", { ref: photoInputRef, type: "file", accept: "image/*", multiple: true, onChange: (e) => {
     Array.from(e.target.files || []).forEach(addImageFromFile);
     e.target.value = "";
   }, style: { display: "none" } }), /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em" } }, "Screenshots"), /* @__PURE__ */ React.createElement("button", { onClick: () => {
@@ -836,7 +817,7 @@ function ImportModal({ onImport, onClose }) {
       placeholder: "Copy-paste rows directly from your banking website or PDF viewer\u2026",
       style: { width: "100%", minHeight: 90, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 12px", color: C.text, fontFamily: "monospace", fontSize: 11, resize: "vertical", outline: "none", lineHeight: 1.6, boxSizing: "border-box" }
     }
-  )), text.trim().startsWith("[") && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("button", { onClick: goJSON, style: { ...btn(C.s2, C.muted, `1px solid ${C.border}`, 12, "8px 14px") } }, "Looks like JSON \u2014 import directly \u2192")), err && /* @__PURE__ */ React.createElement("div", { style: { color: C.danger, fontSize: 13, marginBottom: 12, padding: "8px 12px", background: "rgba(245,118,118,0.08)", borderRadius: 8 } }, err), status === "done" && preview && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#0e9e7a", fontWeight: 600, marginBottom: 8 } }, "\u2713 Found ", preview.length, " transactions \u2014 review then import:"), /* @__PURE__ */ React.createElement("div", { style: { background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, maxHeight: 180, overflowY: "auto" } }, preview.map((t, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { padding: "7px 12px", borderBottom: `1px solid ${C.s2}`, display: "flex", gap: 12, fontSize: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.muted, fontFamily: "monospace", flexShrink: 0 } }, fmtDNum(t.date)), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, t.description), /* @__PURE__ */ React.createElement("span", { style: { color: C.danger, fontFamily: "monospace", flexShrink: 0 } }, importCurrency2, " ", t.amount.toLocaleString("en-AE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })))))), status === "loading" && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "14px 0", color: C.muted, fontSize: 13, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 24, marginBottom: 6 } }, "\u23F3"), /* @__PURE__ */ React.createElement("div", null, "Reading with Claude Haiku..."), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 3 } }, "~$0.01 per page")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, status !== "done" ? /* @__PURE__ */ React.createElement("button", { onClick: runAI, disabled: status === "loading", style: { ...btn(!hasInput || status === "loading" ? C.s3 : C.accent, !hasInput || status === "loading" ? C.muted : "#fff", "none", 14, "12px 0"), flex: 1, opacity: !hasInput || status === "loading" ? 0.5 : 1 } }, status === "loading" ? "Reading..." : "\u{1F916} Extract Transactions") : /* @__PURE__ */ React.createElement("button", { onClick: () => onImport(preview), style: { ...btn(C.accent, "#fff", "none", 14, "12px 0"), flex: 1 } }, "\u2713 Import ", preview == null ? void 0 : preview.length, " Transactions"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: btn(C.s2, C.muted, `1px solid ${C.border}`, 13, "12px 14px") }, "Cancel"))));
+  )), text.trim().startsWith("[") && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 12 } }, /* @__PURE__ */ React.createElement("button", { onClick: goJSON, style: { ...btn(C.s2, C.muted, `1px solid ${C.border}`, 12, "8px 14px") } }, "Looks like JSON \u2014 import directly \u2192")), err && /* @__PURE__ */ React.createElement("div", { style: { color: C.danger, fontSize: 13, marginBottom: 12, padding: "8px 12px", background: "rgba(245,118,118,0.08)", borderRadius: 8 } }, err), status === "done" && preview && /* @__PURE__ */ React.createElement("div", { style: { marginBottom: 14 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, color: "#0e9e7a", fontWeight: 600, marginBottom: 8 } }, "\u2713 Found ", preview.length, " transactions \u2014 review then import:"), /* @__PURE__ */ React.createElement("div", { style: { background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, maxHeight: 180, overflowY: "auto" } }, preview.map((t, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { padding: "7px 12px", borderBottom: `1px solid ${C.s2}`, display: "flex", gap: 12, fontSize: 12 } }, /* @__PURE__ */ React.createElement("span", { style: { color: C.muted, fontFamily: "monospace", flexShrink: 0 } }, fmtDNum(t.date)), /* @__PURE__ */ React.createElement("span", { style: { flex: 1, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, t.description), /* @__PURE__ */ React.createElement("span", { style: { color: C.danger, fontFamily: "monospace", flexShrink: 0 } }, importCurrency, " ", t.amount.toLocaleString("en-AE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })))))), status === "loading" && /* @__PURE__ */ React.createElement("div", { style: { textAlign: "center", padding: "14px 0", color: C.muted, fontSize: 13, marginBottom: 10 } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 24, marginBottom: 6 } }, "\u23F3"), /* @__PURE__ */ React.createElement("div", null, "Reading with Claude Haiku..."), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: C.dim, marginTop: 3 } }, "~$0.01 per page")), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8 } }, status !== "done" ? /* @__PURE__ */ React.createElement("button", { onClick: runAI, disabled: status === "loading", style: { ...btn(!hasInput || status === "loading" ? C.s3 : C.accent, !hasInput || status === "loading" ? C.muted : "#fff", "none", 14, "12px 0"), flex: 1, opacity: !hasInput || status === "loading" ? 0.5 : 1 } }, status === "loading" ? "Reading..." : "\u{1F916} Extract Transactions") : /* @__PURE__ */ React.createElement("button", { onClick: () => onImport(preview), style: { ...btn(C.accent, "#fff", "none", 14, "12px 0"), flex: 1 } }, "\u2713 Import ", preview == null ? void 0 : preview.length, " Transactions"), /* @__PURE__ */ React.createElement("button", { onClick: onClose, style: btn(C.s2, C.muted, `1px solid ${C.border}`, 13, "12px 14px") }, "Cancel"))));
 }
 function SettingsModal({ taxonomy, vendorMap, rawTxs, currency, onImport, onClose }) {
   const [err, setErr] = useState("");
@@ -921,9 +902,8 @@ function SettingsModal({ taxonomy, vendorMap, rawTxs, currency, onImport, onClos
     }
   }
   async function loadFromFile() {
-    var _a;
     if (!hasNativeFS) {
-      (_a = loadRef.current) == null ? void 0 : _a.click();
+      if (loadRef.current) loadRef.current.click();
       return;
     }
     if (!window.__ledgerFileHandle) {
@@ -944,7 +924,7 @@ function SettingsModal({ taxonomy, vendorMap, rawTxs, currency, onImport, onClos
         setErr("Not a valid ledger-data.json.");
         return;
       }
-      onImport(p, importCurrency);
+      onImport(p);
       setStatus("loaded");
       setMsg("Loaded " + p.rawTxs.length + " transactions from " + window.__ledgerFileName);
     } catch (e) {
@@ -972,7 +952,7 @@ function SettingsModal({ taxonomy, vendorMap, rawTxs, currency, onImport, onClos
         setErr("Not a valid ledger-data.json.");
         return;
       }
-      onImport(p, importCurrency);
+      onImport(p);
       setStatus("loaded");
       setMsg("Loaded " + p.rawTxs.length + " transactions");
     };
@@ -1865,14 +1845,14 @@ function App() {
     setSelTxs(/* @__PURE__ */ new Set());
     setModal(null);
   }
-  async function handleImport(parsed, importCurrency2 = "AED") {
-    const rates = importCurrency2 !== "AED" ? await getAEDRates() : null;
+  async function handleImport(parsed, importCurrency = "AED") {
+    const rates = importCurrency !== "AED" ? await getAEDRates() : null;
     const e = parsed.map((tx) => {
       const amt = parseFloat(tx.amount) || 0;
       const credit = tx.isCredit === true || amt < 0 && !tx.isCredit;
       const originalAmount = Math.abs(amt);
-      const aedAmount = importCurrency2 !== "AED" && rates ? toAED(originalAmount, importCurrency2, rates) : originalAmount;
-      return { ...tx, amount: parseFloat(aedAmount.toFixed(2)), originalAmount, currency: importCurrency2, isCredit: credit, txType: credit ? "credit" : tx.txType || getTxType(tx) };
+      const aedAmount = importCurrency !== "AED" && rates ? toAED(originalAmount, importCurrency, rates) : originalAmount;
+      return { ...tx, amount: parseFloat(aedAmount.toFixed(2)), originalAmount, currency: importCurrency, isCredit: credit, txType: credit ? "credit" : tx.txType || getTxType(tx) };
     }).filter((t) => t.amount > 0);
     let msg = null;
     const txKey = (t) => `${t.date}||${(t.description || "").toLowerCase().trim()}||${(+t.amount).toFixed(2)}`;
@@ -2141,7 +2121,7 @@ function App() {
 }
 ReactDOM.render(React.createElement(App), document.getElementById("root"));
 
-} catch(e) { showErr(e.message || String(e)); }
+}catch(e){showErr(e.message||String(e));}
 </script>
 
 </body>
