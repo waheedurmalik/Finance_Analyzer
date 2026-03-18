@@ -151,7 +151,6 @@ function enrich(tx, tax, vmap) {
     cat = tx.category;
     sub = tx.subcategory;
     txType = tx.txType || getTxType(tx);
-    console.log("ENRICH _manual:", tx.description, "->", cat, sub);
   } else {
     cat = tx.category || "Other";
     sub = getSub(tx.description, cat, tax);
@@ -1784,7 +1783,7 @@ function App() {
     const vmap = storeLoad("ledger-vendormap");
     const txs = storeLoad("ledger-rawtxs");
     const cur = storeLoad("ledger-currency");
-    if (tax) setTaxonomyRaw(tax);
+    if (tax) setTaxonomyRaw({ ...DEFAULT_TAXONOMY, ...tax });
     if (vmap) setVendorMapRaw(vmap);
     if (txs && txs.length) setRawTxsRaw(txs);
     if (cur) setCurrency(cur);
@@ -1816,7 +1815,7 @@ function App() {
     return Math.max(1, ms.size);
   }, [transactions, pFrom, pTo, selMonths]);
   const mTxs = useMemo(() => {
-    const passType = (t) => globalTypeFilter.includes(t.txType) || t.isCredit && t.category === "Income";
+    const passType = (t) => t.isCredit || globalTypeFilter.includes(t.txType);
     if (selMonths.length > 0) return transactions.filter((t) => selMonths.includes(t.date ? t.date.slice(0, 7) : "") && passType(t));
     return transactions.filter((t) => t.date >= pFrom && t.date <= pTo && passType(t));
   }, [transactions, pFrom, pTo, globalTypeFilter, selMonths]);
@@ -1825,8 +1824,11 @@ function App() {
   const typeTots = useMemo(() => {
     const r = { standard: 0, nonstandard: 0, exceptional: 0, income: 0 };
     mTxs.forEach((t) => {
-      if (t.isCredit && t.category === "Income") r.income += t.amount;
-      else r[t.txType] = (r[t.txType] || 0) + t.amount;
+      if (t.isCredit && t.category === "Income") {
+        r.income += t.amount;
+      } else if (!t.isCredit) {
+        r[t.txType] = (r[t.txType] || 0) + t.amount;
+      }
     });
     return r;
   }, [mTxs]);
@@ -1918,33 +1920,9 @@ function App() {
   }
   function handleSettingsImport(p) {
     if (p.taxonomy) {
-      const COLOUR_FIX = {
-        "#76f5d4": "#0e9e7a",
-        "#7695f5": "#4a62d8",
-        "#f5d476": "#c8860a",
-        "#b8f576": "#5a9e1a",
-        "#95f576": "#3a8e10",
-        "#d476f5": "#9b30d4",
-        "#f57695": "#d93060",
-        "#f576b8": "#c0206e",
-        "#76d4f5": "#0a8ab8",
-        "#8a9a8a": "#5a6a5a",
-        "#f57676": "#c03030",
-        "#a78bfa": "#5a3fd4",
-        "#76f5a4": "#0e8a4a",
-        "#f5a076": "#c05010",
-        "#76a4f5": "#1a50c8"
-      };
-      const fixTax = (tax) => {
-        const out = {};
-        for (const [cat, def] of Object.entries(tax)) {
-          out[cat] = { ...def, color: COLOUR_FIX[def.color] || def.color };
-        }
-        return out;
-      };
-      const fixed = fixTax(p.taxonomy);
-      setTaxonomyRaw(fixed);
-      storeSave("ledger-taxonomy", fixed);
+      const merged = { ...DEFAULT_TAXONOMY, ...p.taxonomy };
+      setTaxonomyRaw(merged);
+      storeSave("ledger-taxonomy", merged);
     }
     if (p.vendorMap) {
       setVendorMapRaw(p.vendorMap);
@@ -1996,7 +1974,10 @@ function App() {
   const TABS = [["overview", "\u{1F4CA}"], ["categories", "\u{1F3F7}\uFE0F"], ["subcategories", "\u{1F516}"], ["transactions", "\u{1F4CB}"], ["vendors", "\u{1F3EA}"]];
   const TAB_LABELS = { overview: "Overview", categories: "Categories", subcategories: "Subcategories", transactions: "Transactions", vendors: "Vendors" };
   if (!loaded) return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center", color: C.muted, fontSize: 14 } }, "Loading\u2026");
-  return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "inherit", paddingBottom: 90 } }, /* @__PURE__ */ React.createElement("style", null, `*{box-sizing:border-box;margin:0;padding:0;}select,input,textarea,button{font-family:inherit;} body{background:#f4f6f9;}`), modal === "import" && /* @__PURE__ */ React.createElement(ImportModal, { onImport: handleImport, onClose: () => setModal(null) }), modal === "manage" && /* @__PURE__ */ React.createElement(ManageModal, { taxonomy, setTaxonomy, vendorMap, setVendorMap, rawTxs, setRawTxs, onClose: () => setModal(null) }), modal === "remap" && remapTx && /* @__PURE__ */ React.createElement(RemapModal, { tx: remapTx, taxonomy, onSave: handleRemap, onClose: () => {
+  return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "inherit", paddingBottom: 90 } }, /* @__PURE__ */ React.createElement("style", null, `*{box-sizing:border-box;margin:0;padding:0;}select,input,textarea,button{font-family:inherit;} body{background:#f4f6f9;}`), modal === "import" && /* @__PURE__ */ React.createElement(ImportModal, { onImport: handleImport, onClose: () => setModal(null) }), modal === "manage" && /* @__PURE__ */ React.createElement(ManageModal, { taxonomy, setTaxonomy, vendorMap, setVendorMap, rawTxs, setRawTxs, onClose: () => {
+    setModal(null);
+    setImportMsg({ text: "Config saved. Remember to Save your data file to keep these changes permanently.", type: "info" });
+  } }), modal === "remap" && remapTx && /* @__PURE__ */ React.createElement(RemapModal, { tx: remapTx, taxonomy, onSave: handleRemap, onClose: () => {
     setModal(null);
     setRemapTx(null);
   } }), modal === "export" && /* @__PURE__ */ React.createElement(ExportModal, { transactions, taxonomy, currency, onClose: () => setModal(null) }), modal === "settings" && /* @__PURE__ */ React.createElement(SettingsModal, { taxonomy, vendorMap, rawTxs, currency, onImport: handleSettingsImport, onClose: () => setModal(null) }), modal === "bulk" && /* @__PURE__ */ React.createElement(BulkEditModal, { selected: selTxs, transactions: mTxs, taxonomy, onSave: handleBulkSave, onClose: () => setModal(null) }), drillOverlay && /* @__PURE__ */ React.createElement(DrillTxOverlay, { txs: drillOverlay.txs, label: drillOverlay.label, currency: displayCurrency, dispRates: dispRates2, taxonomy, onRemap: (tx) => {
