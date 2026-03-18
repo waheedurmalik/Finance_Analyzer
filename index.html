@@ -94,7 +94,7 @@ var _globalDispRates = null;
 const fmt = (n, cur) => {
   var val = Math.abs(Number(n || 0));
   var dispCur = cur || "AED";
-  if (_globalDispRates && dispCur === "AED") {
+  if (_globalDispRates) {
     var entries = Object.entries(_globalDispRates);
     if (entries.length > 0 && entries[0][1]) {
       val = val * entries[0][1];
