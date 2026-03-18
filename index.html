@@ -76,7 +76,8 @@ const DEFAULT_TAXONOMY = {
   "Health": { icon: "\u{1F48A}", color: "#d93060", subs: { "Medical": { icon: "\u{1F3E5}", kw: ["hospital", "clinic", "doctor", "medical", "healthcare", "dental", "optical"] }, "Pharmacy": { icon: "\u{1F48A}", kw: ["pharmacy", "aster", "life pharmacy", "boots", "watson"] }, "Wellness": { icon: "\u{1F9D8}", kw: ["wellness", "spa", "massage", "zero wellness", "salon"] }, "Other Health": { icon: "\u{1F48A}", kw: [] } } },
   "Entertainment": { icon: "\u{1F3AC}", color: "#c0206e", subs: { "Cinema & Events": { icon: "\u{1F3AD}", kw: ["cinema", "vox", "reel", "event", "concert", "theatre", "ticket"] }, "Sports": { icon: "\u26BD", kw: ["sports", "football", "cricket", "swim", "padel", "bowling", "golf"] }, "Gaming": { icon: "\u{1F3AE}", kw: ["playstation", "xbox", "steam", "gaming", "nintendo"] }, "Other Entertainment": { icon: "\u{1F3AC}", kw: [] } } },
   "Travel": { icon: "\u2708\uFE0F", color: "#0a8ab8", subs: { "Flights": { icon: "\u2708\uFE0F", kw: ["emirates", "flydubai", "airline", "flight", "etihad", "qatar airways"] }, "Hotels": { icon: "\u{1F3E8}", kw: ["hotel", "marriott", "hilton", "hyatt", "accor", "ihg", "ritz", "resort"] }, "Foreign Spend": { icon: "\u{1F30D}", kw: ["istanbul", "turkey", "london", "bangkok", "paris"] }, "Other Travel": { icon: "\u2708\uFE0F", kw: [] } } },
-  "Other": { icon: "\u{1F4E6}", color: "#5a6a5a", subs: { "Transfers": { icon: "\u{1F4B8}", kw: ["transfer", "nomod", "remittance", "exchange", "western union", "wise"] }, "Insurance": { icon: "\u{1F6E1}\uFE0F", kw: ["insurance", "takaful", "policy", "premium"] }, "Education": { icon: "\u{1F4DA}", kw: ["school", "university", "course", "tuition", "education"] }, "Miscellaneous": { icon: "\u{1F4E6}", kw: [] } } }
+  "Other": { icon: "\u{1F4E6}", color: "#5a6a5a", subs: { "Transfers": { icon: "\u{1F4B8}", kw: ["transfer", "nomod", "remittance", "exchange", "western union", "wise"] }, "Insurance": { icon: "\u{1F6E1}\uFE0F", kw: ["insurance", "takaful", "policy", "premium"] }, "Education": { icon: "\u{1F4DA}", kw: ["school", "university", "course", "tuition", "education"] }, "Miscellaneous": { icon: "\u{1F4E6}", kw: [] } } },
+  "Income": { icon: "\u{1F4B0}", color: "#1a7a3a", subs: { "Salary": { icon: "\u{1F4BC}", kw: ["salary", "payroll", "wages", "pay"] }, "Rental Income": { icon: "\u{1F3E0}", kw: ["rental", "rent received", "tenancy income"] }, "Shares & Dividends": { icon: "\u{1F4C8}", kw: ["dividend", "shares", "investment income", "interest"] }, "Other Income": { icon: "\u{1F4B0}", kw: [] } } }
 };
 const RAW_SEED = [];
 (function githubSafetyGuard() {
@@ -1815,15 +1816,17 @@ function App() {
     return Math.max(1, ms.size);
   }, [transactions, pFrom, pTo, selMonths]);
   const mTxs = useMemo(() => {
-    if (selMonths.length > 0) return transactions.filter((t) => selMonths.includes(t.date ? t.date.slice(0, 7) : "") && globalTypeFilter.includes(t.txType));
-    return transactions.filter((t) => t.date >= pFrom && t.date <= pTo && globalTypeFilter.includes(t.txType));
+    const passType = (t) => globalTypeFilter.includes(t.txType) || t.isCredit && t.category === "Income";
+    if (selMonths.length > 0) return transactions.filter((t) => selMonths.includes(t.date ? t.date.slice(0, 7) : "") && passType(t));
+    return transactions.filter((t) => t.date >= pFrom && t.date <= pTo && passType(t));
   }, [transactions, pFrom, pTo, globalTypeFilter, selMonths]);
   const total = mTxs.reduce((s, t) => s + t.amount, 0);
   const change = null;
   const typeTots = useMemo(() => {
-    const r = { standard: 0, nonstandard: 0, exceptional: 0 };
+    const r = { standard: 0, nonstandard: 0, exceptional: 0, income: 0 };
     mTxs.forEach((t) => {
-      r[t.txType] = (r[t.txType] || 0) + t.amount;
+      if (t.isCredit && t.category === "Income") r.income += t.amount;
+      else r[t.txType] = (r[t.txType] || 0) + t.amount;
     });
     return r;
   }, [mTxs]);
@@ -2035,7 +2038,8 @@ function App() {
     { label: avgMode ? "Avg/Month Total" : "Total", value: fmt(avgMode ? total / mMonths : total, displayCurrency), sub: avgMode ? `\xF7${mMonths} months` : selMonths.length > 0 ? selMonths.length === 1 ? fmtM(selMonths[0]) : selMonths.length + " months selected" : period.preset === "all" ? "All time" : period.preset === "this_year" ? "This year" : period.preset === "last_year" ? "Last year" : period.preset === "this_month" ? "This month" : period.preset === "last_month" ? "Last month" : pFrom === pTo ? pFrom : pFrom.slice(0, 7) === pTo.slice(0, 7) ? fmtM(pFrom.slice(0, 7)) : pFrom + " \u2192 " + pTo, accent: C.accent },
     { label: avgMode ? "\u2605 Fixed Avg/Mo" : "\u2605 Fixed Monthly", value: fmt(avgMode ? typeTots.standard / mMonths : typeTots.standard, displayCurrency, dispRates2), sub: mTxs.filter((t) => t.txType === "standard").length + " txns", accent: TYPE_META.standard.color },
     { label: avgMode ? "\u25C6 Variable Avg/Mo" : "\u25C6 Variable Cost", value: fmt(avgMode ? (typeTots.nonstandard || 0) / mMonths : typeTots.nonstandard || 0, displayCurrency, dispRates2), sub: mTxs.filter((t) => t.txType === "nonstandard").length + " txns", accent: TYPE_META.nonstandard.color },
-    { label: avgMode ? "\u26A1 Exc Avg/Mo" : "\u26A1 Exceptional", value: fmt(avgMode ? (typeTots.exceptional || 0) / mMonths : typeTots.exceptional || 0, displayCurrency, dispRates2), sub: mTxs.filter((t) => t.txType === "exceptional").length + " txns", accent: TYPE_META.exceptional.color }
+    { label: avgMode ? "\u26A1 Exc Avg/Mo" : "\u26A1 Exceptional", value: fmt(avgMode ? (typeTots.exceptional || 0) / mMonths : typeTots.exceptional || 0, displayCurrency, dispRates2), sub: mTxs.filter((t) => t.txType === "exceptional").length + " txns", accent: TYPE_META.exceptional.color },
+    { label: avgMode ? "\u{1F4B0} Income Avg/Mo" : "\u{1F4B0} Income", value: fmt(avgMode ? (typeTots.income || 0) / mMonths : typeTots.income || 0, displayCurrency, dispRates2), sub: mTxs.filter((t) => t.isCredit && t.category === "Income").length + " txns", accent: "#1a7a3a" }
   ].map((c, i) => /* @__PURE__ */ React.createElement("div", { key: i, style: { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "16px", position: "relative", overflow: "hidden" } }, /* @__PURE__ */ React.createElement("div", { style: { position: "absolute", top: 0, left: 0, right: 0, height: 3, background: c.accent, borderRadius: "18px 18px 0 0" } }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 } }, c.label), /* @__PURE__ */ React.createElement("div", { style: { fontFamily: "inherit", fontSize: 19, letterSpacing: -0.5, marginBottom: 4, lineHeight: 1.2 } }, c.value), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 12, fontWeight: 500, color: C.muted } }, c.sub)))), /* @__PURE__ */ React.createElement("div", { style: { background: C.surface, borderRadius: 14, marginBottom: 18, border: `1px solid ${C.border}`, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflowX: "auto", WebkitOverflowScrolling: "touch" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 2, padding: 5, minWidth: "max-content" } }, TABS.map(([t, icon]) => /* @__PURE__ */ React.createElement("button", { key: t, onClick: () => setTab(t), style: { minWidth: 80, padding: "11px 12px", borderRadius: 10, border: "none", background: tab === t ? C.accent : "transparent", color: tab === t ? "#fff" : C.muted, cursor: "pointer", fontFamily: "inherit", fontWeight: tab === t ? 700 : 500, outline: "none", textAlign: "center", lineHeight: 1.3, transition: "all 0.15s" } }, /* @__PURE__ */ React.createElement("div", { style: { fontSize: 22 } }, icon), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, marginTop: 3, letterSpacing: "0.01em", whiteSpace: "nowrap" } }, TAB_LABELS[t]))))), tab === "overview" && /* @__PURE__ */ React.createElement(
     SpendingChart,
     {
