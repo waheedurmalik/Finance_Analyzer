@@ -1052,6 +1052,22 @@ function PeriodPicker({ label, preset, setPreset, customFrom, setCustomFrom, cus
     fontFamily: "inherit"
   } }, l))), preset === "custom" ? /* @__PURE__ */ React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 500, color: C.muted } }, "From"), /* @__PURE__ */ React.createElement("input", { type: "date", value: customFrom, onChange: (e) => setCustomFrom(e.target.value), style: { ...inp(), colorScheme: "light", padding: "4px 8px", fontSize: 11, cursor: "pointer", minWidth: 130 } })), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 5 } }, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 11, fontWeight: 500, color: C.muted } }, "To"), /* @__PURE__ */ React.createElement("input", { type: "date", value: customTo, onChange: (e) => setCustomTo(e.target.value), style: { ...inp(), colorScheme: "light", padding: "4px 8px", fontSize: 11, cursor: "pointer", minWidth: 130 } }))) : /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, fontWeight: 500, color: C.muted, marginTop: 2 } }, from, " \u2192 ", to));
 }
+function canvasRoundRect(ctx, x, y, w, h, r) {
+  if (w < 1) w = 1;
+  var radius = typeof r === "number" ? r : Array.isArray(r) ? r[0] : 4;
+  radius = Math.min(radius, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
 function HBarChart({ data, showB, labelA, labelB, colorOf, colA, colB, currency, displayRates: displayRates2, onClickA, onClickB }) {
   const canvasRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
@@ -1097,8 +1113,7 @@ function HBarChart({ data, showB, labelA, labelB, colorOf, colA, colB, currency,
       const wA = (row.A || 0) / maxVal * chartW;
       const barColA = colA || col;
       ctx.fillStyle = barColA;
-      ctx.beginPath();
-      ctx.roundRect(PAD.left, rowTop, Math.max(wA, 2), BAR_H, [0, 4, 4, 0]);
+      canvasRoundRect(ctx, PAD.left, rowTop, Math.max(wA, 2), BAR_H, 4);
       ctx.fill();
       if ((row.A || 0) > 0) {
         ctx.fillStyle = barColA;
@@ -1111,8 +1126,7 @@ function HBarChart({ data, showB, labelA, labelB, colorOf, colA, colB, currency,
         const wB = (row.B || 0) / maxVal * chartW;
         const barColB = colB || "#a78bfa";
         ctx.fillStyle = barColB + "bb";
-        ctx.beginPath();
-        ctx.roundRect(PAD.left, rowTop + BAR_H + GAP, Math.max(wB, 2), BAR_H, [0, 4, 4, 0]);
+        canvasRoundRect(ctx, PAD.left, rowTop + BAR_H + GAP, Math.max(wB, 2), BAR_H, 4);
         ctx.fill();
         if ((row.B || 0) > 0) {
           ctx.fillStyle = barColB;
