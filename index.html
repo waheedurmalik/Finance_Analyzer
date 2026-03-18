@@ -225,6 +225,30 @@ function toAED(amount, fromCurrency, rates) {
   if (!rate) return amount;
   return amount / rate;
 }
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(e) {
+    return { error: e };
+  }
+  componentDidCatch(e, info) {
+    console.error("React error:", e.message, info);
+  }
+  render() {
+    if (this.state.error) {
+      return React.createElement(
+        "div",
+        { style: { padding: 24, color: "#d94040", fontFamily: "monospace", fontSize: 13, background: "#fff", margin: 16, borderRadius: 12, border: "1px solid #fca5a5" } },
+        React.createElement("div", { style: { fontWeight: 700, marginBottom: 8 } }, "App Error"),
+        React.createElement("div", null, this.state.error.message || String(this.state.error)),
+        React.createElement("button", { onClick: () => this.setState({ error: null }), style: { marginTop: 12, padding: "6px 14px", background: "#d94040", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" } }, "Retry")
+      );
+    }
+    return this.props.children;
+  }
+}
 const PAL = ["#2a7a5a", "#4a62d8", "#c8760a", "#8a3ad4", "#c0206e", "#0a7ab8", "#3a8e10", "#d93060", "#5a4ad4", "#0a6e9a", "#a05a00", "#2a6a4a"];
 function TT({ active, payload, label }) {
   if (!active || !(payload == null ? void 0 : payload.length)) return null;
@@ -1078,65 +1102,69 @@ function HBarChart({ data, showB, labelA, labelB, colorOf, colA, colB, currency,
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    const W = canvas.offsetWidth;
-    canvas.width = W * dpr;
-    canvas.height = height * dpr;
-    const ctx = canvas.getContext("2d");
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, W, height);
-    const maxVal = Math.max(...data.flatMap((r) => [r.A || 0, r.B || 0]), 1);
-    const chartW = W - PAD.left - PAD.right;
-    const ticks = 4;
-    ctx.strokeStyle = "#dde1e9";
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= ticks; i++) {
-      const x = PAD.left + chartW / ticks * i;
-      ctx.beginPath();
-      ctx.moveTo(x, PAD.top);
-      ctx.lineTo(x, height - PAD.bottom);
-      ctx.stroke();
-      const v = maxVal / ticks * i;
-      ctx.fillStyle = "#9ba8b8";
-      ctx.font = "10px monospace";
-      ctx.textAlign = "center";
-      ctx.fillText(v >= 1e3 ? (v / 1e3).toFixed(0) + "k" : Math.round(v), x, height - PAD.bottom + 14);
-    }
-    data.forEach((row, i) => {
-      const col = colorOf(row.key);
-      const rowTop = PAD.top + i * (showB ? BAR_H * 2 + GAP + 14 : BAR_H + 12);
-      ctx.fillStyle = "#6b7a8d";
-      ctx.font = "11px system-ui,sans-serif";
-      ctx.textAlign = "right";
-      const label = row.key.length > 16 ? row.key.slice(0, 15) + "\u2026" : row.key;
-      ctx.fillText(label, PAD.left - 8, rowTop + BAR_H / 2 + 4);
-      const wA = (row.A || 0) / maxVal * chartW;
-      const barColA = colA || col;
-      ctx.fillStyle = barColA;
-      canvasRoundRect(ctx, PAD.left, rowTop, Math.max(wA, 2), BAR_H, 4);
-      ctx.fill();
-      if ((row.A || 0) > 0) {
+    try {
+      const dpr = window.devicePixelRatio || 1;
+      const W = canvas.offsetWidth;
+      canvas.width = W * dpr;
+      canvas.height = height * dpr;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, W, height);
+      const maxVal = data.reduce((m, r) => Math.max(m, r.A || 0, r.B || 0), 1);
+      const chartW = W - PAD.left - PAD.right;
+      const ticks = 4;
+      ctx.strokeStyle = "#dde1e9";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= ticks; i++) {
+        const x = PAD.left + chartW / ticks * i;
+        ctx.beginPath();
+        ctx.moveTo(x, PAD.top);
+        ctx.lineTo(x, height - PAD.bottom);
+        ctx.stroke();
+        const v = maxVal / ticks * i;
+        ctx.fillStyle = "#9ba8b8";
+        ctx.font = "10px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(v >= 1e3 ? (v / 1e3).toFixed(0) + "k" : Math.round(v), x, height - PAD.bottom + 14);
+      }
+      data.forEach((row, i) => {
+        const col = colorOf(row.key);
+        const rowTop = PAD.top + i * (showB ? BAR_H * 2 + GAP + 14 : BAR_H + 12);
+        ctx.fillStyle = "#6b7a8d";
+        ctx.font = "11px -apple-system,sans-serif";
+        ctx.textAlign = "right";
+        const label = row.key.length > 16 ? row.key.slice(0, 15) + "\u2026" : row.key;
+        ctx.fillText(label, PAD.left - 8, rowTop + BAR_H / 2 + 4);
+        const wA = (row.A || 0) / maxVal * chartW;
+        const barColA = colA || col;
         ctx.fillStyle = barColA;
-        ctx.font = "bold 10px system-ui,sans-serif";
-        ctx.textAlign = "left";
-        const vA = row.A >= 1e3 ? (row.A / 1e3).toFixed(1) + "k" : Math.round(row.A);
-        ctx.fillText(vA, PAD.left + wA + 4, rowTop + BAR_H / 2 + 4);
-      }
-      if (showB && (row.B || 0) >= 0) {
-        const wB = (row.B || 0) / maxVal * chartW;
-        const barColB = colB || "#a78bfa";
-        ctx.fillStyle = barColB + "bb";
-        canvasRoundRect(ctx, PAD.left, rowTop + BAR_H + GAP, Math.max(wB, 2), BAR_H, 4);
+        canvasRoundRect(ctx, PAD.left, rowTop, Math.max(wA, 2), BAR_H, 4);
         ctx.fill();
-        if ((row.B || 0) > 0) {
-          ctx.fillStyle = barColB;
-          ctx.font = "bold 10px system-ui,sans-serif";
+        if ((row.A || 0) > 0) {
+          ctx.fillStyle = barColA;
+          ctx.font = "bold 10px -apple-system,sans-serif";
           ctx.textAlign = "left";
-          const vB = row.B >= 1e3 ? (row.B / 1e3).toFixed(1) + "k" : Math.round(row.B);
-          ctx.fillText(vB, PAD.left + wB + 4, rowTop + BAR_H + GAP + BAR_H / 2 + 4);
+          const vA = row.A >= 1e3 ? (row.A / 1e3).toFixed(1) + "k" : Math.round(row.A);
+          ctx.fillText(vA, PAD.left + wA + 4, rowTop + BAR_H / 2 + 4);
         }
-      }
-    });
+        if (showB && (row.B || 0) >= 0) {
+          const wB = (row.B || 0) / maxVal * chartW;
+          const barColB = colB || "#a78bfa";
+          ctx.fillStyle = barColB + "bb";
+          canvasRoundRect(ctx, PAD.left, rowTop + BAR_H + GAP, Math.max(wB, 2), BAR_H, 4);
+          ctx.fill();
+          if ((row.B || 0) > 0) {
+            ctx.fillStyle = barColB;
+            ctx.font = "bold 10px -apple-system,sans-serif";
+            ctx.textAlign = "left";
+            const vB = row.B >= 1e3 ? (row.B / 1e3).toFixed(1) + "k" : Math.round(row.B);
+            ctx.fillText(vB, PAD.left + wB + 4, rowTop + BAR_H + GAP + BAR_H / 2 + 4);
+          }
+        }
+      });
+    } catch (err) {
+      console.error("Chart draw error:", err.message);
+    }
   }, [data, showB, height, colorOf, colA, colB, currency]);
   function handleMouseMove(e) {
     const canvas = canvasRef.current;
@@ -1145,7 +1173,7 @@ function HBarChart({ data, showB, labelA, labelB, colorOf, colA, colB, currency,
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     const chartW = canvas.offsetWidth - PAD.left - PAD.right;
-    const maxVal = Math.max(...data.flatMap((r) => [r.A || 0, r.B || 0]), 1);
+    const maxVal = data.reduce((m, r) => Math.max(m, r.A || 0, r.B || 0), 1);
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       const rowTop = PAD.top + i * (showB ? 22 * 2 + 4 + 14 : 26 + 12);
@@ -1171,7 +1199,7 @@ function HBarChart({ data, showB, labelA, labelB, colorOf, colA, colB, currency,
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     const chartW = canvas.offsetWidth - PAD.left - PAD.right;
-    const maxVal = Math.max(...data.flatMap((r) => [r.A || 0, r.B || 0]), 1);
+    const maxVal = data.reduce((m, r) => Math.max(m, r.A || 0, r.B || 0), 1);
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       const rowTop = PAD.top + i * (showB ? 22 * 2 + 4 + 14 : 26 + 12);
@@ -1218,8 +1246,7 @@ function LineChartCanvas({ data, series, colorOf, currency, xKey, dashedKeys = [
     if (!data.length || !series.length) return;
     const chartW = W - PAD.left - PAD.right;
     const chartH = H - PAD.top - PAD.bottom;
-    const allVals = data.flatMap((d) => series.map((s) => d[s] || 0));
-    const maxVal = Math.max(...allVals, 1);
+    const maxVal = data.reduce((m, d) => series.reduce((mm, s) => Math.max(mm, d[s] || 0), m), 1);
     const yTicks = 4;
     ctx.strokeStyle = "#dde1e9";
     ctx.lineWidth = 1;
@@ -2103,7 +2130,7 @@ function App() {
     }, style: btn("rgba(245,118,118,0.1)", C.danger, `1px solid ${C.danger}44`, 11, "3px 7px") }, "\u{1F5D1}"))));
   })))));
 }
-ReactDOM.render(React.createElement(App), document.getElementById("root"));
+ReactDOM.render(React.createElement(ErrorBoundary, null, React.createElement(App)), document.getElementById("root"));
 
 }catch(e){showErr(e.message||String(e));}
 </script>
