@@ -4,8 +4,8 @@
   "description": "Smart Analysis for your household finances",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f3f6f0",
-  "theme_color": "#f3f6f0",
+  "background_color": "#ecf1eb",
+  "theme_color": "#ecf1eb",
   "orientation": "portrait",
   "icons": [
     {
