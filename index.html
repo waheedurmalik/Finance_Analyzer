@@ -9,14 +9,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="Home Financials"/>
-<meta name="theme-color" content="#eef0f4"/>
+<meta name="theme-color" content="#f3f6f0"/>
 <link rel="manifest" href="manifest.json"/>
 <link rel="apple-touch-icon" href="logo.png"/>
 <title>Home Financials</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;background:#eef0f4;color:#0f1624;font-family:-apple-system,'SF Pro Text','Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
-#splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#eef0f4;z-index:9999;transition:opacity 0.3s;}
+html,body{height:100%;background:#f3f6f0;color:#0f1624;font-family:-apple-system,'SF Pro Text','Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+#splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#f3f6f0;z-index:9999;transition:opacity 0.3s;}
 #err{display:none;max-width:380px;margin:0 16px;padding:16px 20px;background:#fff;border:1px solid #fca5a5;border-radius:12px;font-size:12px;color:#d94040;line-height:1.7;word-break:break-word;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
 input[type="date"]::-webkit-calendar-picker-indicator{opacity:0.5;cursor:pointer;}
 select option{background:#fff;color:#0f1624;}
@@ -26,7 +26,7 @@ button{-webkit-tap-highlight-color:transparent;}
 </head>
 <body>
 <div id="splash">
-<img src="logo.png" alt="Home Financials" style="max-width:300px;width:85%;height:auto;"/>
+<img src="logo.png" alt="Home Financials" style="max-width:380px;width:92%;height:auto;"/>
 <div id="splash-msg" style="font-size:13px;font-weight:500;color:#7a8699;margin-top:8px;">Starting…</div>
 <div id="err"></div>
 </div>
@@ -157,7 +157,7 @@ function storeLoad(key) {
   }
 }
 const C = {
-  bg: "#eef0f4",
+  bg: "#f3f6f0",
   surface: "#ffffff",
   s2: "#e8eaef",
   s3: "#dde0e8",
